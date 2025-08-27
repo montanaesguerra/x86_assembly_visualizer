@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Assembly Visualizer – Starter</title>
+    <style>
+      /* --- Design tokens --- */
+      :root {
+        --bg: #0f1220;
+        --panel: #161a2b;
+        --panel-2: #1b2035;
+        --text: #e7ecf3;
+        --muted: #a8b0c2;
+        --accent: #6aa9ff;
+        --accent-2: #7ef7d4;
+        --danger: #ff7a7a;
+        --border: #2a314d;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        --round: 16px;
+        --shadow: 0 6px 24px rgba(0,0,0,.35);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+        background: radial-gradient(1200px 600px at 80% -10%, rgba(106,169,255,.08), transparent 40%),
+                    radial-gradient(800px 400px at -10% -20%, rgba(126,247,212,.08), transparent 50%),
+                    var(--bg);
+        color: var(--text);
+      }
+
+      /* --- App shell --- */
+      header {
+        position: sticky; top: 0; z-index: 5;
+        display: flex; gap: 12px; align-items: center; justify-content: space-between;
+        padding: 14px 18px; border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(15,18,32,.8), rgba(15,18,32,.65));
+        backdrop-filter: saturate(140%) blur(6px);
+      }
+      header h1 { font-size: 18px; letter-spacing: .4px; margin: 0; font-weight: 650; }
+      .controls { display: flex; gap: 8px; align-items: center; }
+      button, .btn {
+        appearance: none; border: 1px solid var(--border); color: var(--text);
+        background: linear-gradient(180deg, var(--panel-2), var(--panel));
+        padding: 10px 12px; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow);
+        font-weight: 600; letter-spacing: .2px;
+      }
+      button:disabled { opacity: .55; cursor: not-allowed; }
+      .btn-secondary { background: transparent; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr 1fr 1fr; /* 4 columns */
+        gap: 12px; padding: 12px; height: calc(100% - 64px);
+      }
+
+      .panel {
+        display: flex; flex-direction: column; min-height: 0; /* enable children to scroll */
+        background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%), var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--round);
+        box-shadow: var(--shadow);
+      }
+
+      .panel header { position: sticky; inset: 0 0 auto 0; border-bottom: 1px solid var(--border); border-radius: var(--round) var(--round) 0 0; }
+      .panel header h2 { font-size: 14px; margin: 0; font-weight: 700; color: var(--muted); letter-spacing: .4px; }
+
+      .panel-body { padding: 12px; overflow: auto; scrollbar-width: thin; }
+      .panel-body::-webkit-scrollbar { height: 8px; width: 8px; }
+      .panel-body::-webkit-scrollbar-thumb { background: #2a314d; border-radius: 8px; }
+
+      /* --- Column 1: Instructions --- */
+      .asm-list { list-style: none; padding: 0; margin: 0; font-family: var(--mono); font-size: 14px; }
+      .asm-item { display: grid; grid-template-columns: 38px 1fr; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+      .asm-item .ln { text-align: right; color: var(--muted); }
+      .asm-item.active { background: linear-gradient(90deg, rgba(106,169,255,.15), transparent); }
+      .asm-item .op { white-space: pre; }
+
+      /* --- Column 2: Registers & Flags --- */
+      .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 6px 8px; border-bottom: 1px dashed var(--border); font-family: var(--mono); }
+      .kv b { color: var(--accent); }
+      .flags { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 6px; margin-top: 10px; }
+      .flag { text-align: center; padding: 6px 0; border: 1px solid var(--border); border-radius: 8px; font-family: var(--mono); font-size: 12px; }
+      .flag.on { outline: 2px solid var(--accent-2); box-shadow: 0 0 0 3px rgba(126,247,212,.15) inset; }
+
+      /* --- Column 3: Memory --- */
+      .mem-table { width: 100%; border-collapse: collapse; font-family: var(--mono); }
+      .mem-table th, .mem-table td { border-bottom: 1px dashed var(--border); padding: 6px 8px; font-size: 13px; }
+      .mem-table th { text-align: left; color: var(--muted); position: sticky; top: 0; background: var(--panel); }
+      .addr { color: var(--accent-2); }
+
+      /* --- Column 4: Stack --- */
+      .stack { display: flex; flex-direction: column-reverse; gap: 8px; } /* top of stack at bottom */
+      .stack-item { border: 1px solid var(--border); border-radius: 10px; padding: 8px; font-family: var(--mono); background: linear-gradient(180deg, var(--panel-2), var(--panel)); }
+      .stack-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+
+      /* --- Footer helper --- */
+      .hint { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+
+      /* --- Responsive --- */
+      @media (max-width: 1200px) {
+        .grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+      }
+      @media (max-width: 720px) {
+        header { flex-direction: column; align-items: stretch; gap: 10px; }
+        .grid { grid-template-columns: 1fr; grid-auto-rows: minmax(240px, 1fr); height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Assembly Visualizer • x86 (32‑bit) – Starter</h1>
+      <div class="controls">
+        <button id="loadDemo">Load demo</button>
+        <button id="stepBtn" disabled>Step ▶</button>
+        <button id="resetBtn" class="btn-secondary" disabled>Reset ↺</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- Column 1: Instructions -->
+      <section class="panel" id="col-asm">
+        <header><h2>Instructions</h2></header>
+        <div class="panel-body">
+          <ol class="asm-list" id="asmList"></ol>
+          <p class="hint">Tip: highlight shows the current instruction (EIP). Add/edit instructions in <code>program</code> inside the script.</p>
+        </div>
+      </section>
+
+      <!-- Column 2: Registers & Flags -->
+      <section class="panel" id="col-regs">
+        <header><h2>Registers & Flags</h2></header>
+        <div class="panel-body" id="regsBody">
+          <!-- Registers injected by JS -->
+          <div class="flags" id="flags"></div>
+          <p class="hint">Flags light up when set. (CF, ZF, SF, OF, PF, AF)</p>
+        </div>
+      </section>
+
+      <!-- Column 3: Memory Placeholder -->
+      <section class="panel" id="col-mem">
+        <header><h2>Memory (placeholder)</h2></header>
+        <div class="panel-body">
+          <table class="mem-table" id="memTable">
+            <thead>
+              <tr><th>Address</th><th>Bytes</th><th>Ascii</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="hint">This is a simple linear view (not real paging). Use <code>writeMem(addr, bytes)</code> in JS to demo effects like <code>mov ebx, [eax]</code>.</p>
+        </div>
+      </section>
+
+      <!-- Column 4: Stack -->
+      <section class="panel" id="col-stack">
+        <header><h2>Stack (conceptual)</h2></header>
+        <div class="panel-body">
+          <div class="stack-meta">Top of stack is at the bottom. <code>push</code> adds, <code>pop</code> removes.</div>
+          <div class="stack" id="stack"></div>
+          <p class="hint">In x86, the stack grows downward in memory. Here we visualize growth downward but display the top-most element at the bottom for readability.</p>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // --- Minimal state model (purely for teaching visuals; not a real CPU) ---
+      const state = {
+        eip: 0,
+        regs: { EAX: 0, EBX: 0, ECX: 0, EDX: 0, ESI: 0, EDI: 0, EBP: 0, ESP: 0x1000 },
+        flags: { CF:0, ZF:0, SF:0, OF:0, PF:0, AF:0 },
+        mem: new Map(), // address:number -> byte (0..255)
+        stack: [], // array of 32-bit values (numbers)
+        program: []
+      };
+
+      // --- Demo program (very small) ---
+      const demoProgram = [
+        'mov eax, 0x5',
+        'mov ebx, 0x3',
+        'add eax, ebx',
+        'push eax',
+        'mov ecx, [data]',
+        'pop edx',
+        'cmp eax, edx',
+        'je done',
+        'mov eax, 0x0',
+        'done: nop'
+      ];
+
+      // --- Lightweight parser/executor for a tiny subset ---
+      function toHex(v, pad=8) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(pad,'0'); }
+
+      function renderAll() {
+        renderProgram();
+        renderRegs();
+        renderFlags();
+        renderMem();
+        renderStack();
+        stepBtn.disabled = state.program.length === 0 || state.eip >= state.program.length;
+        resetBtn.disabled = state.program.length === 0;
+      }
+
+      // --- Column 1: program ---
+      const asmList = document.getElementById('asmList');
+      function renderProgram() {
+        asmList.innerHTML = '';
+        state.program.forEach((op, i) => {
+          const li = document.createElement('li');
+          li.className = 'asm-item' + (i === state.eip ? ' active' : '');
+          li.innerHTML = `<span class="ln">${i+1}</span><span class="op">${op}</span>`;
+          asmList.appendChild(li);
+        });
+      }
+
+      // --- Column 2: registers & flags ---
+      const regsBody = document.getElementById('regsBody');
+      function renderRegs() {
+        const keys = ['EAX','EBX','ECX','EDX','ESI','EDI','EBP','ESP','EIP'];
+        const values = { ...state.regs, EIP: state.eip };
+        const frag = document.createDocumentFragment();
+        keys.forEach(k => {
+          const row = document.createElement('div');
+          row.className = 'kv';
+          row.innerHTML = `<b>${k}</b><span>${toHex(values[k]||0)}</span>`;
+          frag.appendChild(row);
+        });
+        // reset & append
+        const preservedFlagsEl = document.getElementById('flags');
+        regsBody.innerHTML = '';
+        regsBody.appendChild(frag);
+        regsBody.appendChild(preservedFlagsEl);
+      }
+
+      function renderFlags() {
+        const flagsEl = document.getElementById('flags');
+        flagsEl.innerHTML = '';
+        Object.entries(state.flags).forEach(([k,v]) => {
+          const d = document.createElement('div');
+          d.className = 'flag' + (v ? ' on' : '');
+          d.textContent = `${k}=${v}`;
+          flagsEl.appendChild(d);
+        });
+      }
+
+      // --- Column 3: memory ---
+      const memTableBody = document.querySelector('#memTable tbody');
+      function renderMem() {
+        memTableBody.innerHTML = '';
+        // show first 32 addresses that exist, grouped into rows of 8 bytes
+        const addrs = [...state.mem.keys()].sort((a,b)=>a-b).slice(0, 32);
+        for (let i = 0; i < addrs.length; i += 8) {
+          const rowAddrs = addrs.slice(i, i+8);
+          if (rowAddrs.length === 0) break;
+          const start = rowAddrs[0];
+          const bytes = rowAddrs.map(a => state.mem.get(a) ?? 0);
+          const ascii = bytes.map(b => (b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td class="addr">${toHex(start, 8)}</td><td>${bytes.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ')}</td><td>${ascii}</td>`;
+          memTableBody.appendChild(tr);
+        }
+      }
+
+      // helpers to write memory (byte array)
+      function writeMem(addr, bytes) { bytes.forEach((b,i)=> state.mem.set(addr+i, b & 0xFF)); }
+
+      // --- Column 4: stack ---
+      const stackEl = document.getElementById('stack');
+      function renderStack() {
+        stackEl.innerHTML = '';
+        state.stack.forEach((val, idx) => {
+          const d = document.createElement('div');
+          d.className = 'stack-item';
+          d.innerHTML = `<div>${toHex(val)}</div>`;
+          stackEl.appendChild(d);
+        });
+      }
+
+      // --- Tiny executor (subset): mov, add, push, pop, cmp, je, nop, labels, [data] ---
+      function step() {
+        if (state.eip >= state.program.length) return;
+        const raw = state.program[state.eip];
+        const op = raw.split(';')[0].trim();
+        if (!op) { state.eip++; return renderAll(); }
+
+        // labels like "done:" or symbolic [data]
+        if (/^[a-zA-Z_][\w]*:\s*$/.test(op)) { state.eip++; return renderAll(); }
+
+        const [mn, rest] = op.split(/\s+/, 2);
+        const args = rest ? rest.split(',').map(s=>s.trim()) : [];
+
+        const getVal = (t) => {
+          if (/^0x[0-9a-fA-F]+$/.test(t)) return parseInt(t,16);
+          if (/^\d+$/.test(t)) return parseInt(t,10);
+          if (t in state.regs) return state.regs[t];
+          if (t === '[data]') {
+            // read 4 bytes at 0x2000 (little-endian)
+            let v = 0; for (let i=0;i<4;i++) v |= (state.mem.get(0x2000+i)??0) << (8*i);
+            return v >>> 0;
+          }
+          return 0;
+        };
+        const setReg = (r, v) => { if (r in state.regs) state.regs[r] = v >>> 0; };
+
+        const aluFlags = (res) => {
+          state.flags.ZF = (res>>>0) === 0 ? 1:0;
+          state.flags.SF = (res & 0x80000000) ? 1:0;
+          // (OF/CF simplified for demo)
+          state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+        };
+
+        switch (mn.toLowerCase()) {
+          case 'mov': {
+            const [dst, src] = args;
+            const val = getVal(src);
+            setReg(dst.toUpperCase(), val);
+            state.eip++; break;
+          }
+          case 'add': {
+            const [dst, src] = args;
+            const val = (getVal(dst) + getVal(src)) >>> 0;
+            setReg(dst.toUpperCase(), val); aluFlags(val);
+            state.eip++; break;
+          }
+          case 'push': {
+            const [src] = args; const val = getVal(src);
+            state.stack.push(val >>> 0);
+            state.regs.ESP = (state.regs.ESP - 4) >>> 0; // conceptual
+            state.eip++; break;
+          }
+          case 'pop': {
+            const [dst] = args; const val = state.stack.pop() ?? 0;
+            setReg(dst.toUpperCase(), val >>> 0);
+            state.regs.ESP = (state.regs.ESP + 4) >>> 0;
+            state.eip++; break;
+          }
+          case 'cmp': {
+            const [a,b] = args; const res = (getVal(a) - getVal(b)) >>> 0; aluFlags(res); state.eip++; break;
+          }
+          case 'je': {
+            const [label] = args; if (state.flags.ZF===1) { jumpTo(label); } else { state.eip++; } break;
+          }
+          case 'nop': { state.eip++; break; }
+          default: { state.eip++; }
+        }
+        renderAll();
+      }
+
+      function jumpTo(label) {
+        const target = state.program.findIndex(l => l.trim().toLowerCase() === (label.toLowerCase()+':'));
+        state.eip = target >= 0 ? target+1 : state.eip+1;
+      }
+
+      // --- Demo data preload ---
+      function loadDemo() {
+        Object.assign(state, {
+          eip: 0,
+          regs: { EAX:0, EBX:0, ECX:0, EDX:0, ESI:0, EDI:0, EBP:0, ESP:0x1000 },
+          flags: { CF:0, ZF:0, SF:0, OF:0, PF:0, AF:0 },
+          mem: new Map(),
+          stack: [],
+          program: demoProgram.slice(),
+        });
+        // Write "DATA" into memory at 0x2000
+        writeMem(0x2000, [0x44,0x41,0x54,0x41]);
+        renderAll();
+      }
+
+      function reset() { state.eip = 0; state.stack = []; state.regs.ESP = 0x1000; renderAll(); }
+
+      // --- Wire controls ---
+      const stepBtn = document.getElementById('stepBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      document.getElementById('loadDemo').addEventListener('click', loadDemo);
+      stepBtn.addEventListener('click', step);
+      resetBtn.addEventListener('click', reset);
+
+      // initial render
+      renderAll();
+    </script>
+  </body>
+</html>
