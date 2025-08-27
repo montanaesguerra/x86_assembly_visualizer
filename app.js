@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Assembly Visualizer – Starter</title>
-    <!-- ✅ External CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header>
@@ -62,7 +61,6 @@
       </section>
     </main>
 
-    <!-- ✅ External JS -->
     <script src="app.js"></script>
   </body>
 </html>
