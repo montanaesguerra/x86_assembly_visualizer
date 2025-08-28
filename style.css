@@ -19,9 +19,10 @@ html, body { height: 100%; }
 body {
   margin: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  background: radial-gradient(1200px 600px at 80% -10%, rgba(106,169,255,.08), transparent 40%),
-              radial-gradient(800px 400px at -10% -20%, rgba(126,247,212,.08), transparent 50%),
-              var(--bg);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(106,169,255,.08), transparent 40%),
+    radial-gradient(800px 400px at -10% -20%, rgba(126,247,212,.08), transparent 50%),
+    var(--bg);
   color: var(--text);
 }
 
@@ -35,6 +36,7 @@ header {
 }
 header h1 { font-size: 18px; letter-spacing: .4px; margin: 0; font-weight: 650; }
 .controls { display: flex; gap: 8px; align-items: center; }
+
 button, .btn {
   appearance: none; border: 1px solid var(--border); color: var(--text);
   background: linear-gradient(180deg, var(--panel-2), var(--panel));
@@ -44,6 +46,20 @@ button, .btn {
 button:disabled { opacity: .55; cursor: not-allowed; }
 .btn-secondary { background: transparent; }
 
+/* Match the button look for the dropdown */
+.controls select {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+
+/* --- Layout grid --- */
 .grid {
   display: grid;
   grid-template-columns: 1.2fr 1fr 1fr 1fr; /* 4 columns */
@@ -51,7 +67,7 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 }
 
 .panel {
-  display: flex; flex-direction: column; min-height: 0; /* enable children to scroll */
+  display: flex; flex-direction: column; min-height: 0; /* allow inner scroll */
   background: linear-gradient(180deg, rgba(255,255,255,.02), transparent 24%), var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--round);
