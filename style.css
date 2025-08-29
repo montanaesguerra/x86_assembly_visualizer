@@ -12,6 +12,8 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --round: 16px;
   --shadow: 0 6px 24px rgba(0,0,0,.35);
+  --dropdown-bg: #1b203;
+  --dropdown-bg-hover: #161a2b;
 }
 
 * { box-sizing: border-box; }
@@ -50,13 +52,21 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .controls select {
   appearance: none;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  /*background: linear-gradient(180deg, var(--panel-2), var(--panel));*/
+  background: var(--dropdown-bg);
   color: var(--text);
   padding: 10px 12px;
   border-radius: 12px;
   box-shadow: var(--shadow);
   font-weight: 600;
   letter-spacing: .2px;
+}
+
+/* Drop down hovers*/
+.controls select:hover,
+.controls select:focus {
+  background: var(--dropdown-bg-hover);
+  outline: none; /*removes default browser blue outline*/
 }
 
 /* --- Layout grid --- */
