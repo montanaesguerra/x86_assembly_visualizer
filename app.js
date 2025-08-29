@@ -144,25 +144,28 @@ const stackEl = document.getElementById('stack');
 function renderStack() {
   stackEl.innerHTML = '';
 
-  // Render stack items (first push at bottom; top-of-stack at bottom due to column-reverse)
+  // Build rows (top-of-stack is the *last* value in state.stack)
   state.stack.forEach((val, i) => {
+    const isTop = i === state.stack.length - 1;
     const addr = (0x1000 - 4 * (i + 1)) >>> 0; // memory address of this item
     const d = document.createElement('div');
-    d.className = 'stack-item';
+
+    d.className = 'stack-item' + (isTop ? ' top' : '');
     d.innerHTML = `
       <div class="stack-col addr">${toHex(addr)}</div>
       <div class="stack-col data">${toHex(val)}</div>
+      ${isTop ? `<div class="stack-col esp"><span class="esp-chip">ESP → ${toHex(addr)}</span></div>` : ''}
       `;
       stackEl.appendChild(d);
   });
 
-  // Header should appear the TOP; since .stack uses column-reverse,
-  // append the header LAST so it renders at the top.
+  // Header goes last so with column-reverse it stays on top.
   const header = document.createElement('div');
   header.className = 'stack-item stack-header';
   header.innerHTML = `
     <div class="stack-col-h">Address</div>
     <div class="stack-col-h">Data</div>
+    <div class="stack-col-h"></div>
     `;
   stackEl.appendChild(header);
 
