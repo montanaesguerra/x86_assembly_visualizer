@@ -45,6 +45,21 @@ const demos = {
     'dec ebx',
     'mul eax',
     'done: nop'
+  ],
+  stack: [
+    //Stack instructions
+    'mov eax, 0x10',
+    'mov ebx, 0x15',
+    'mov ecx, 0x20',
+    'mov edx, 0x25',
+    'push eax',
+    'push ebx',
+    'push ecx',
+    'push edx',
+    'pop eax',
+    'pop ebx',
+    'pop ecx',
+    'pop edx'
   ]
 };
 
