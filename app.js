@@ -139,15 +139,39 @@ function renderMem() {
 function writeMem(addr, bytes) { bytes.forEach((b,i)=> state.mem.set(addr+i, b & 0xFF)); }
 
 // Column 4: stack
+// Update to include memory address column TODO
 const stackEl = document.getElementById('stack');
 function renderStack() {
   stackEl.innerHTML = '';
-  state.stack.forEach((val) => {
+
+  // Render stack items (first push at bottom; top-of-stack at bottom due to column-reverse)
+  state.stack.forEach((val, i) => {
+    const addr = (0x1000 - 4 * (i + 1)) >>> 0; // memory address of this item
     const d = document.createElement('div');
     d.className = 'stack-item';
-    d.innerHTML = `<div>${toHex(val)}</div>`;
-    stackEl.appendChild(d);
+    d.innerHTML = `
+      <div class="stack-col addr">${toHex(addr)}</div>
+      <div class="stack-col data">${toHex(val)}</div>
+      `;
+      stackEl.appendChild(d);
   });
+
+  // Header should appear the TOP; since .stack uses column-reverse,
+  // append the header LAST so it renders at the top.
+  const header = document.createElement('div');
+  header.className = 'stack-item stack-header';
+  header.innerHTML = `
+    <div class="stack-col-h">Address</div>
+    <div class="stack-col-h">Data</div>
+    `;
+  stackEl.appendChild(header);
+
+  // state.stack.forEach((val) => {
+  //   const d = document.createElement('div');
+  //   d.className = 'stack-item';
+  //   d.innerHTML = `<div>${toHex(val)}</div>`;
+  //   stackEl.appendChild(d);
+  // });
 }
 
 // ========= Case-insensitive operand handling =========
