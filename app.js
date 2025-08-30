@@ -3,7 +3,7 @@ console.log("app.js LOADED v10", new Date().toISOString());
 // --- Minimal teaching model (not a real CPU) ---
 const state = {
   eip: 0,
-  regs: { EAX: 0, EBX: 0, ECX: 0, EDX: 0, ESI: 0, EDI: 0, EBP: 0, ESP: 0x1000 },
+  regs: { EAX: 0, EBX: 0, ECX: 0, EDX: 0, ESI: 0, EDI: 0, EBP: 0x1000, ESP: 0x1000 },
   flags: { CF:0, ZF:0, SF:0, OF:0, PF:0, AF:0 },
   mem: new Map(),     // address:number -> byte (0..255)
   stack: [],          // array of 32-bit values
@@ -48,6 +48,8 @@ const demos = {
   ],
   stack: [
     //Stack instructions
+    'push ebp',
+    'mov ebp, esp',
     'mov eax, 0x10',
     'mov ebx, 0x15',
     'mov ecx, 0x20',
@@ -146,15 +148,19 @@ function renderStack() {
 
   // Build rows (top-of-stack is the *last* value in state.stack)
   state.stack.forEach((val, i) => {
+    const addr = (0x1000 - 4 * (i + 1)) >>> 0; // memory address of this item (compute first)
     const isTop = i === state.stack.length - 1;
-    const addr = (0x1000 - 4 * (i + 1)) >>> 0; // memory address of this item
+    const isBase = addr === (state.regs.EBP >>> 0); // Base Pointer
     const d = document.createElement('div');
 
-    d.className = 'stack-item' + (isTop ? ' top' : '');
+    d.className = 'stack-item' + (isTop ? ' top' : '') + (isBase ? ' base' : '');
     d.innerHTML = `
       <div class="stack-col addr">${toHex(addr)}</div>
       <div class="stack-col data">${toHex(val)}</div>
-      ${isTop ? `<div class="stack-col esp"><span class="esp-chip">ESP → ${toHex(addr)}</span></div>` : ''}
+      <div class="stack-col chips">
+        ${isTop ? `<span class="esp-chip">ESP → ${toHex(addr)}</span>` : ''}
+        ${isBase ? `<span class="ebp-chip">EBP</span>` : ''}
+      </div>
       `;
       stackEl.appendChild(d);
   });
@@ -356,7 +362,7 @@ function loadDemo() {
 
   Object.assign(state, {
     eip: 0,
-    regs: { EAX:0, EBX:0, ECX:0, EDX:0, ESI:0, EDI:0, EBP:0, ESP:0x1000 },
+    regs: { EAX:0, EBX:0, ECX:0, EDX:0, ESI:0, EDI:0, EBP:0x1000, ESP:0x1000 },
     flags: { CF:0, ZF:0, SF:0, OF:0, PF:0, AF:0 },
     mem: new Map(),
     stack: [],

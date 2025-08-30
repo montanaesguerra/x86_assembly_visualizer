@@ -12,7 +12,7 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --round: 16px;
   --shadow: 0 6px 24px rgba(0,0,0,.35);
-  --dropdown-bg: #1b203;
+  --dropdown-bg: #1b2035;
   --dropdown-bg-hover: #161a2b;
 }
 
@@ -163,6 +163,33 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   border-radius: 999px;
   white-space: nowrap;
   opacity: 0.95;
+}
+
+/* EBP chip */
+.ebp-chip {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+/* Third column holds chips */
+.stack-item{
+  display: grid;
+  grid-template-columns: 1fr 1fr auto; /*Address | Data | Chips */
+  align-items: center;
+  gap: 8px;
+}
+
+/* Marks the stack frame base row */
+.stack-item.base:not(.top) {
+  outline: 2px dashed var(--accent);
+  box-shadow: 0 0 0 3px rgba(106,169,255,.10) inset;
 }
 
 /* Controls address color */
