@@ -23,6 +23,14 @@ const demos = {
     'nop',
     'done: nop'
   ],
+  moves: [
+    'mov eax, 0x10',
+    'mov ebx, 0x32',
+    'mov ecx, eax',
+    'mov [eax], 0x40',
+    'add [eax], 0x40',
+    'mov [ebx], [eax]'
+  ],
   test: [
     //Test instructions
     'mov eax, 0x20',
