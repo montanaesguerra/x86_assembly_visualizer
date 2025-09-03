@@ -28,7 +28,7 @@ const demos = {
     'mov ebx, 0x32',
     'mov ecx, eax',
     'mov [eax], 0x40',
-    'add [eax], 0x40',
+    'add [eax], 0x30',
     'mov [ebx], [eax]'
   ],
   test: [
@@ -132,21 +132,38 @@ function renderFlags() {
 const memTableBody = document.querySelector('#memTable tbody');
 function renderMem() {
   memTableBody.innerHTML = '';
-  const addrs = [...state.mem.keys()].sort((a,b)=>a-b).slice(0, 32);
-  for (let i = 0; i < addrs.length; i += 8) {
-    const rowAddrs = addrs.slice(i, i+8);
-    if (rowAddrs.length === 0) break;
-    const start = rowAddrs[0];
-    const bytes = rowAddrs.map(a => state.mem.get(a) ?? 0);
-    const ascii = bytes.map(b => (b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+  const addrs = [...state.mem.keys()].sort((a,b)=>a-b).slice(0, 64);
+  addrs.forEach(addr => {
+    const b = readByte(addr);
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="addr">${toHex(start, 8)}</td><td>${bytes.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ')}</td><td>${ascii}</td>`;
+    tr.innerHTML =
+    `<td class="addr">${toHex(addr, 8)}</td>` +
+    `<td>${b}</td>` +
+    `<td>0x${b.toString(16).toUpperCase().padStart(2, '0')}</td>`;
     memTableBody.appendChild(tr);
+  });
   }
-}
 
 // helpers to write memory (byte array)
 function writeMem(addr, bytes) { bytes.forEach((b,i)=> state.mem.set(addr+i, b & 0xFF)); }
+
+// Byte helpers
+function readByte(addr) { return (state.mem.get(addr >>> 0) ?? 0) & 0xFF;}
+function writeByte(addr, v) {state.mem.set(addr >>> 0, v& 0xFF);}
+
+// Parse [REG] -> effective address (simple base-only addressing)
+function parseMemAddr(t) {
+  if (!t) return null;
+  const m = t.trim().match(/^\[\s*([A-Za-z]{2,3})\s*\]$/);
+  if (!m) return null;
+
+  const r = m[1].toUpperCase();
+
+  if (!REG_NAMES.has(r)) return null;
+
+  return state.regs[r] >>> 0;
+}
+
 
 // Column 4: stack
 // Update to include memory address column TODO
@@ -220,6 +237,10 @@ function getVal(t) {
   const R = norm(T);
   if (REG_NAMES.has(R)) return state.regs[R];
 
+  // byte deref: [REG]
+  const memAddr = parseMemAddr(T);
+  if (memAddr !== null) return readByte(memAddr);
+
   // symbolic memory demo: [data]
   if (R === '[DATA]') {
     let v = 0; for (let i=0;i<4;i++) v |= (state.mem.get(0x2000+i)??0) << (8*i);
@@ -266,17 +287,43 @@ function step() {
   switch ((mn||'').toLowerCase()) {
     case 'mov': {
       const [dst, src] = args;
-      const val = getVal(src);
-      console.log("MOV", dst, "<-", toHex(val));
-      setReg(dst, val);
+      const val = getVal(src) & 0xFF; // treat [reg] form as byte-wide
+      const memAddr = parseMemAddr(dst);
+
+      if (memAddr !== null) {
+        console.log("MOV BYTE [", dst, "] <-", toHex(val, 2));
+        writeByte(memAddr, val);
+      } else {
+        console.log("MOV", dst, "<-", toHex(getVal(src)));
+        setReg(dst, getVal(src));
+      }
+      
       state.eip++; break;
     }
     case 'add': {
       const [dst, src] = args;
-      const val = (getVal(dst) + getVal(src)) >>> 0;
-      console.log("ADD", dst, "=", toHex(val));
-      setReg(dst, val);
-      aluFlags(val);
+      const memAddr = parseMemAddr(dst);
+
+      if (memAddr !== null) {
+        const cur = readByte(memAddr);
+        const next = (cur + (getVal(src) & 0xFF)) & 0xFF;
+
+        console.log("ADD BYTE [", dst, "] =", toHex(next, 2), "(from", toHex(cur,2), "+", toHex(getVal(src)&0xFF,2),")");
+        writeByte(memAddr, next);
+
+        // flags from byte result (teaching simplification)
+
+        state.flags.ZF = next === 0 ? 1 : 0;
+        state.flags.SF = (next & 0x80) ? 1:0;
+        state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+      } else {
+        const val = (getVal(dst) + getVal(src)) >>> 0;
+        console.log("Add", dst, "=", toHex(val));
+        setReg(dst, val);
+        state.flags.ZF = (val>>>0) === 0 ? 1:0;
+        state.flags.SF = (val & 0x80000000) ? 1:0;
+        state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+      }
       state.eip++; break;
     }
     case 'sub': {
