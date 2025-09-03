@@ -101,21 +101,52 @@ function renderProgram() {
 
 // Column 2: registers & flags
 const regsBody = document.getElementById('regsBody');
+// Snapshot of last-rendered register values (including EIP) for change-detection
+let _prevRegsSnapshot = null;
+
 function renderRegs() {
   const keys = ['EAX','EBX','ECX','EDX','ESI','EDI','EBP','ESP','EIP'];
   const values = { ...state.regs, EIP: state.eip };
   const frag = document.createDocumentFragment();
+
+
+  if (_prevRegsSnapshot === null) {
+    _prevRegsSnapshot = { ...values };
+  }
+
   keys.forEach(k => {
     const row = document.createElement('div');
-    row.className = 'kv';
+    const changed = _prevRegsSnapshot[k] !== (values[k] ?? 0);
+
+    row.className = 'kv' + (changed ? ' changed' : '');
     row.innerHTML = `<b>${k}</b><span>${toHex(values[k]||0)}</span>`;
     frag.appendChild(row);
   });
+
   const preservedFlagsEl = document.getElementById('flags');
   regsBody.innerHTML = '';
   regsBody.appendChild(frag);
   regsBody.appendChild(preservedFlagsEl);
+  _prevRegsSnapshot = { ...values };
 }
+
+
+
+// function renderRegs() {
+//   const keys = ['EAX','EBX','ECX','EDX','ESI','EDI','EBP','ESP','EIP'];
+//   const values = { ...state.regs, EIP: state.eip };
+//   const frag = document.createDocumentFragment();
+//   keys.forEach(k => {
+//     const row = document.createElement('div');
+//     row.className = 'kv';
+//     row.innerHTML = `<b>${k}</b><span>${toHex(values[k]||0)}</span>`;
+//     frag.appendChild(row);
+//   });
+//   const preservedFlagsEl = document.getElementById('flags');
+//   regsBody.innerHTML = '';
+//   regsBody.appendChild(frag);
+//   regsBody.appendChild(preservedFlagsEl);
+// }
 
 function renderFlags() {
   const flagsEl = document.getElementById('flags');

@@ -145,6 +145,14 @@ button:disabled { opacity: .55; cursor: not-allowed; }
   to { box-shadow: 0 0 0 10px rgba(126,247,212,0) inset;}
 }
 
+/* Flash a register row when its value changed this step */
+.kv.changed {
+  outline: 2px solid var(--accent-2);
+  box-shadow: 0 0 0 3px rgba(126,247,212,.12) inset;
+  animation: flashRow .4s ease-out;
+}
+
+
 /* Makes the top-of-stack stand out*/
 .stack-item.top {
   outline: 2px solid var(--accent-2);
