@@ -1,4 +1,4 @@
-console.log("app.js LOADED v10", new Date().toISOString());
+console.log("app.js LOADED v15", new Date().toISOString());
 
 // --- Minimal teaching model (not a real CPU) ---
 const state = {
@@ -21,7 +21,8 @@ const demos = {
     'cmp eax, 0x0',          // compare result to 0 -> ZF stays 1
     'je done',
     'nop',
-    'done: nop'
+    'done:',
+    'nop'
   ],
   moves: [
     'mov eax, 0x10',
@@ -39,7 +40,8 @@ const demos = {
     'nop',
     'nop',
     'sub eax, ebx',
-    'done: nop'
+    'done:',
+    'nop'
   ],
   test2: [
     //Test2 instructions
@@ -52,7 +54,8 @@ const demos = {
     'inc ebx',
     'dec ebx',
     'mul eax',
-    'done: nop'
+    'done:',
+    'nop'
   ],
   stack: [
     //Stack instructions
@@ -73,49 +76,42 @@ const demos = {
   ],
   Print: [
     //Print String Instructions
-    //'; Write "Release the white paper\\n\\0" to memory starting at 0x2000',
+
     'mov edi, 0x2000', //destination cursor
 
-    //"Release"
-    'mov [edi], 0x52', 'inc edi', // R
-    'mov [edi], 0x65', 'inc edi', //e
-    'mov [edi], 0x6C', 'inc edi', // l
-    'mov [edi], 0x65', 'inc edi', // e
-    'mov [edi], 0x61', 'inc edi', // a
-    'mov [edi], 0x73', 'inc edi', // s
-    'mov [edi], 0x65', 'inc edi', // e
+    
+    'mov [edi], 0x52', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
+    'mov [edi], 0x6C', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
+    'mov [edi], 0x61', 'inc edi',
+    'mov [edi], 0x73', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
 
-    // " " (space)
     'mov [edi], 0x20', 'inc edi',
 
-    // "the"
-    'mov [edi], 0x74', 'inc edi', // t
-    'mov [edi], 0x68', 'inc edi', // h
-    'mov [edi], 0x65', 'inc edi', // e
+    'mov [edi], 0x74', 'inc edi',
+    'mov [edi], 0x68', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
 
-    // " "
     'mov [edi], 0x20', 'inc edi',
 
-    // "white"
-    'mov [edi], 0x77', 'inc edi', // w
-    'mov [edi], 0x68', 'inc edi', // h
-    'mov [edi], 0x69', 'inc edi', // i
-    'mov [edi], 0x74', 'inc edi', // t
-    'mov [edi], 0x65', 'inc edi', // e
+    'mov [edi], 0x77', 'inc edi',
+    'mov [edi], 0x68', 'inc edi',
+    'mov [edi], 0x69', 'inc edi',
+    'mov [edi], 0x74', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
 
-    // " "
     'mov [edi], 0x20', 'inc edi',
 
-    // "paper"
-    'mov [edi], 0x70', 'inc edi', // p
-    'mov [edi], 0x61', 'inc edi', // a
-    'mov [edi], 0x70', 'inc edi', // p
-    'mov [edi], 0x65', 'inc edi', // e
-    'mov [edi], 0x72', 'inc edi', // r
+    'mov [edi], 0x70', 'inc edi',
+    'mov [edi], 0x61', 'inc edi',
+    'mov [edi], 0x70', 'inc edi',
+    'mov [edi], 0x65', 'inc edi',
+    'mov [edi], 0x72', 'inc edi',
 
-    // newline + NUL terminator
-    'mov [edi], 0x0A', 'inc edi', // '\n' (optional)
-    'mov [edi], 0x00',            // '\0' string terminator
+    'mov [edi], 0x0A', 'inc edi',
+    'mov [edi], 0x00',           
 
     'done: nop'
   ],
@@ -178,6 +174,60 @@ const demos = {
 
     'nop'
   ],
+  CALL_RET_Basics: [
+    '; CALL/RET basics: CALL pushes return address; RET pops it',
+    'main:',
+    'mov eax, 1',
+    'call foo',             // pushes return index, jumps to foo
+    'add eax, 1',           // resumes here after RET
+    'jmp done',
+    'foo:',
+    'mov ebx, 0xDEADBEEF',  // arbitrary work
+    'mov eax, 41',
+    'ret',
+    'done:',
+    'nop'
+  ],
+  CALL_RET_cdecl: [
+    '; cdecl: caller pushes args and cleans stack with add esp, 8',
+    'mov ecx, 2',
+    'mov edx, 3',
+    'push 3',               // arg2
+    'push 2',               // arg1
+    'call add2_cdecl',      // pushes return index
+    'add esp, 8',           // caller cleans 2 args (and UI pops them if you added the ESP tweak)
+    'jmp done',
+    'add2_cdecl:',
+    'push ebp',
+    'mov ebp, esp',
+    '; compute using ECX+EDX to keep focus on CALL/RET mechanics',
+    'mov eax, ecx',
+    'add eax, edx',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret',
+    'done:', 
+    'nop'
+  ],
+  CALL_RET_stdcall: [
+    '; stdcall: callee cleans with ret 8',
+    'mov ecx, 5',
+    'mov edx, 7',
+    'push 7',               // arg2
+    'push 5',               // arg1
+    'call add2_stdcall',
+    'jmp done',
+    'add2_stdcall:',
+    'push ebp',
+    'mov ebp, esp',
+    'mov eax, ecx',
+    'add eax, edx',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret 8',                // callee drops 2 args (8 bytes) + pops return index
+    'done:',
+    'nop'
+  ]
 
 };
 
@@ -511,6 +561,14 @@ function step() {
         const val = (getVal(dst) + getVal(src)) >>> 0;
         console.log("Add", dst, "=", toHex(val));
         setReg(dst, val);
+
+        // If adding to ESP, also pop N/4 items from the stack UI
+        const dstUpper = (dst || '').trim().toUpperCase();
+        if (dstUpper === 'ESP') {
+          const inc = getVal(src) >>> 0;
+          const drop = Math.floor(inc / 4);
+          for (let i = 0; i < drop; i++) state.stack.pop();
+        }
         state.flags.ZF = (val>>>0) === 0 ? 1:0;
         state.flags.SF = (val & 0x80000000) ? 1:0;
         state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
@@ -600,6 +658,37 @@ function step() {
       aluFlags(res);
       state.eip++; break;
     }
+    case 'call': {
+      // CALL label: push return index, adjust ESP, then jump to label
+      const [target] = args;
+      const retIdx = (state.eip + 1) >>> 0;   // “return address” = next instruction index
+      state.stack.push(retIdx);
+      state.regs.ESP = (state.regs.ESP - 4) >>> 0;
+      console.log('CALL', target, 'push ret', retIdx);
+      jumpTo(target);
+      break;
+    }
+    case 'ret': {
+      // RET [imm16]: pop return index into EIP; if imm, callee cleans args
+      const imm = args && args[0] ? (getVal(args[0]) >>> 0) : 0;
+      const ret = state.stack.pop() ?? 0;
+      state.regs.ESP = (state.regs.ESP + 4) >>> 0;
+      console.log('RET to', ret, 'clean', imm, 'bytes');
+
+      if (imm) {
+        const drop = Math.floor(imm / 4);
+        for (let i = 0; i < drop; i++) state.stack.pop(); // pop visuals for args
+        state.regs.ESP = (state.regs.ESP + imm) >>> 0;    // ESP += imm
+      }
+      state.eip = ret >>> 0;   // jump back to caller
+      break;
+    }
+    case 'jmp': {
+      const [label] = args;
+      console.log("JMP to", label);
+      jumpTo(label);   // uses your existing label resolver
+      break;
+    }
     case 'je': {
       const [label] = args;
       console.log("JE (ZF=", state.flags.ZF, ") to", label);
@@ -616,6 +705,16 @@ function step() {
       }
       break;
     }
+    case 'leave': {
+      // leave == mov esp, ebp; pop ebp
+      setReg('ESP', state.regs.EBP >>> 0);
+      const v = state.stack.pop() ?? 0;
+      setReg('EBP', v >>> 0);
+      state.regs.ESP = (state.regs.ESP + 4) >>> 0;
+      state.eip++;
+      break;
+    }
+
     case 'nop': { console.log("NOP"); state.eip++; break; }
     default: { console.warn("Unknown mn:", mn); state.eip++; }
   }
