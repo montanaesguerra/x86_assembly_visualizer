@@ -70,7 +70,79 @@ const demos = {
     'pop ebx',
     'pop ecx',
     'pop edx'
-  ]
+  ],
+  Print: [
+    //Print String Instructions
+    '; Write "Release the white paper\\n\\0" to memory starting at 0x2000',
+    'mov edi, 0x2000', //destination cursor
+
+    //"Release"
+    'mov [edi], 0x52', 'inc edi', // R
+    'mov [edi], 0x 65', 'inc edi', //e
+    'mov [edi], 0x6C', 'inc edi', // l
+    'mov [edi], 0x65', 'inc edi', // e
+    'mov [edi], 0x61', 'inc edi', // a
+    'mov [edi], 0x73', 'inc edi', // s
+    'mov [edi], 0x65', 'inc edi', // e
+
+    // " " (space)
+    'mov [edi], 0x20', 'inc edi',
+
+    // "the"
+    'mov [edi], 0x74', 'inc edi', // t
+    'mov [edi], 0x68', 'inc edi', // h
+    'mov [edi], 0x65', 'inc edi', // e
+
+    // " "
+    'mov [edi], 0x20', 'inc edi',
+
+    // "white"
+    'mov [edi], 0x77', 'inc edi', // w
+    'mov [edi], 0x68', 'inc edi', // h
+    'mov [edi], 0x69', 'inc edi', // i
+    'mov [edi], 0x74', 'inc edi', // t
+    'mov [edi], 0x65', 'inc edi', // e
+
+    // " "
+    'mov [edi], 0x20', 'inc edi',
+
+    // "paper"
+    'mov [edi], 0x70', 'inc edi', // p
+    'mov [edi], 0x61', 'inc edi', // a
+    'mov [edi], 0x70', 'inc edi', // p
+    'mov [edi], 0x65', 'inc edi', // e
+    'mov [edi], 0x72', 'inc edi', // r
+
+    // newline + NUL terminator
+    'mov [edi], 0x0A', 'inc edi', // '\n' (optional)
+    'mov [edi], 0x00',            // '\0' string terminator
+
+    'done: nop'
+  ],
+    Arithmetic_Basics: [
+    '; Simple arithmetic warmup',
+    'mov eax, 0x10',        // 16
+    'add eax, 0x30',        // 16 + 48 = 64 (0x40)
+    'sub eax, 0x01',        // 64 - 1 = 63 (0x3F)
+    'inc eax',              // 64 (0x40)
+    'dec eax',              // 63 (0x3F)
+    'mov ebx, 7',
+    'add ebx, 5',           // 12
+    'sub ebx, 20',          // 12 - 20 = -8 (0xFFFFFFF8)
+    'nop'
+  ],
+  Branching_Basics: [
+    '; Compare two values and branch',
+    'mov eax, 5',
+    'mov ebx, 5',
+    'cmp eax, ebx',
+    'je equal',             // equal -> jump
+    'mov ecx, 1',           // (skipped)
+    'jmp done',
+    'equal: mov ecx, 2',
+    'done: nop'
+  ],
+
 };
 
 // --- Utilities & rendering ---
