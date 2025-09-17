@@ -178,10 +178,10 @@ const demos = {
     '; CALL/RET basics: CALL pushes return address; RET pops it',
     'main:',
     'mov eax, 1',
-    'call foo',             // pushes return index, jumps to foo
+    'call 1',             // pushes return index, jumps to foo
     'add eax, 1',           // resumes here after RET
     'jmp done',
-    'foo:',
+    '1:',
     'mov ebx, 0xDEADBEEF',  // arbitrary work
     'mov eax, 41',
     'ret',
@@ -227,12 +227,612 @@ const demos = {
     'ret 8',                // callee drops 2 args (8 bytes) + pops return index
     'done:',
     'nop'
-  ]
+  ],
+  CTF_Bonus1_C_Addition: [
+    '; equivalent to int add(int a, int b)',
+    'mov ecx, 1',
+    'mov edx, 2',
+    'push 2',
+    'push 1',
+    'call add_demo',
+    'add esp, 8 ; caller cleans (cdecl)',
+    'jmp done',
+
+    'add_demo:',
+    'push ebp',
+    'mov ebp, esp',
+    'mov eax, ecx ;eax = a(1)',
+    'add eax, edx ;eax = a+b (3)',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret',
+    'done:',
+    'nop'
+  ],
+  CTF_A1_Arithmetic_AddXorSub: [
+    '; A1 — Arithmetic & MOV',
+    '; Init: EAX=5, EBX=2. Q: final EAX, EBX, ZF?',
+    'mov eax, 5',
+    'mov ebx, 2',
+    'add eax, ebx',
+    'xor ebx, ebx',
+    'sub eax, 1',
+    'done:',
+    'nop'
+  ],
+  // CTF_A1_Arithmetic_AddXorSub_ANS: [
+  //   '; A1 — ANSWER',
+  //   'mov eax, 5',
+  //   'mov ebx, 2',
+  //   'add eax, ebx',
+  //   'xor ebx, ebx',
+  //   'sub eax, 1',
+  //   '; ANSWER: EAX=6, EBX=0, ZF=0',
+  //   'done: nop'
+  // ],
+
+  CTF_A2_Arithmetic_LEA: [
+    '; A2 — LEA address math',
+    '; Init: EAX=0x10, ECX=3. Q: EDX (hex)?',
+    'mov eax, 0x10',
+    'mov ecx, 3',
+    'lea edx, [eax + ecx*4 + 8]',
+    'done:',
+    'nop'
+  ],
+  // CTF_A2_Arithmetic_LEA_ANS: [
+  //   '; A2 — ANSWER',
+  //   'mov eax, 0x10',
+  //   'mov ecx, 3',
+  //   'lea edx, [eax + ecx*4 + 8]',
+  //   '; ANSWER: EDX=0x24',
+  //   'done: nop'
+  // ],
+
+  CTF_A3_IncFlags: [
+    '; A3 — INC wraps and sets ZF',
+    '; Init: EAX=0xFFFFFFFF. Q: EAX, ZF?',
+    'mov eax, 0xFFFFFFFF',
+    'inc eax',
+    'done:',
+    'nop'
+  ],
+  // CTF_A3_IncFlags_ANS: [
+  //   '; A3 — ANSWER',
+  //   'mov eax, 0xFFFFFFFF',
+  //   'inc eax',
+  //   '; ANSWER: EAX=0x00000000, ZF=1',
+  //   'done: nop'
+  // ],
+
+  CTF_A4_CmpFlags: [
+    '; A4 — CMP flags',
+    '; Init: EAX=2, EBX=5. Q: ZF, SF, CF after cmp?',
+    'mov eax, 2',
+    'mov ebx, 5',
+    'cmp eax, ebx',
+    'done:',
+    'nop'
+  ],
+  // CTF_A4_CmpFlags_ANS: [
+  //   '; A4 — ANSWER',
+  //   'mov eax, 2',
+  //   'mov ebx, 5',
+  //   'cmp eax, ebx',
+  //   '; ANSWER: ZF=0, SF=1, CF=1',
+  //   'done: nop'
+  // ],
+
+  /* --- Stack Basics --- */
+  CTF_B1_PushStore: [
+    '; B1 — PUSH stores value on stack',
+    '; Init: ESP=0x1000, EAX=0xDEADBEEF. Q: ESP and [ESP]?',
+    'mov esp, 0x1000',
+    'mov eax, 0xDEADBEEF',
+    'push eax',
+    'done:',
+    'nop'
+  ],
+  // CTF_B1_PushStore_ANS: [
+  //   '; B1 — ANSWER',
+  //   'mov esp, 0x1000',
+  //   'mov eax, 0xDEADBEEF',
+  //   'push eax',
+  //   '; ANSWER: ESP=0x0FFC, [ESP]=0xDEADBEEF',
+  //   'done: nop'
+  // ],
+
+  CTF_B2_PushImmPop: [
+    '; B2 — push imm, pop into EBX',
+    '; Continues idea: Q: EBX and ESP?',
+    'mov esp, 0x0FFC',
+    'push 0x11223344',
+    'pop ebx',
+    'done:',
+    'nop'
+  ],
+  // CTF_B2_PushImmPop_ANS: [
+  //   '; B2 — ANSWER',
+  //   'mov esp, 0x0FFC',
+  //   'push 0x11223344',
+  //   'pop ebx',
+  //   '; ANSWER: EBX=0x11223344, ESP=0x0FFC',
+  //   'done: nop'
+  // ],
+
+  CTF_B3_PushPushPopPop: [
+    '; B3 — order of pops',
+    '; Init: ESP=0x2000. Q: EAX, EBX, ESP?',
+    'mov esp, 0x2000',
+    'push 1',
+    'push 2',
+    'pop eax',
+    'pop ebx',
+    'done:',
+    'nop'
+  ],
+  // CTF_B3_PushPushPopPop_ANS: [
+  //   '; B3 — ANSWER',
+  //   'mov esp, 0x2000',
+  //   'push 1',
+  //   'push 2',
+  //   'pop eax',
+  //   'pop ebx',
+  //   '; ANSWER: EAX=2, EBX=1, ESP=0x2000',
+  //   'done: nop'
+  // ],
+
+  CTF_B4_AddESP: [
+    '; B4 — add esp, N',
+    '; Init: ESP=0x3000. Q: ESP?',
+    'mov esp, 0x3000',
+    'add esp, 12',
+    'done:',
+    'nop'
+  ],
+  // CTF_B4_AddESP_ANS: [
+  //   '; B4 — ANSWER',
+  //   'mov esp, 0x3000',
+  //   'add esp, 12',
+  //   '; ANSWER: ESP=0x300C',
+  //   'done: nop'
+  // ],
+
+  /* --- CALL/RET & Frames --- */
+  CTF_C1_cdecl_BeforeCleanup: [
+    '; C1 — cdecl: inspect state right after RET (before add esp,8)',
+    '; Start ESP=0x1000. Q: EAX, ESP right after RET returns?',
+    'mov esp, 0x1000',
+    'push 2',
+    'push 1',
+    'call add_demo',
+    'jmp after_ret',        // skip caller cleanup so we can inspect
+    'add esp, 8',
+    'after_ret:',
+    'nop',
+    'add_demo:',
+    'push ebp',
+    'mov ebp, esp',
+    '; (using constants to focus on CALL/RET mechanics)',
+    'mov eax, 1',
+    'add eax, 2',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret'
+  ],
+  // CTF_C1_cdecl_BeforeCleanup_ANS: [
+  //   '; C1 — ANSWER',
+  //   'mov esp, 0x1000',
+  //   'push 2',
+  //   'push 1',
+  //   'call add_demo',
+  //   'jmp after_ret',
+  //   'add esp, 8',
+  //   'after_ret: nop',
+  //   'add_demo:',
+  //   'push ebp',
+  //   'mov ebp, esp',
+  //   'mov eax, 1',
+  //   'add eax, 2',
+  //   'mov esp, ebp',
+  //   'pop ebp',
+  //   'ret',
+  //   '; ANSWER: after RET: EAX=3, ESP=0x0FF8',
+  // ],
+
+  CTF_C2_stdcall_Ret8: [
+    '; C2 — stdcall: callee cleans with ret 8',
+    '; Start ESP=0x1000. Q: ESP after return?',
+    'mov esp, 0x1000',
+    'push 2',
+    'push 1',
+    'call add_stdcall',
+    'done:',
+    'nop',
+    'add_stdcall:',
+    'push ebp',
+    'mov ebp, esp',
+    'mov eax, 1',
+    'add eax, 2',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret 8'
+  ],
+  // CTF_C2_stdcall_Ret8_ANS: [
+  //   '; C2 — ANSWER',
+  //   'mov esp, 0x1000',
+  //   'push 2',
+  //   'push 1',
+  //   'call add_stdcall',
+  //   'done: nop',
+  //   'add_stdcall:',
+  //   'push ebp',
+  //   'mov ebp, esp',
+  //   'mov eax, 1',
+  //   'add eax, 2',
+  //   'mov esp, ebp',
+  //   'pop ebp',
+  //   'ret 8',
+  //   '; ANSWER: ESP=0x1000 after RET 8',
+  // ],
+
+  CTF_C3_LeaveRetExplain: [
+    '; C3 — leave + ret behavior',
+    '; Q: In words, what does leave do to ESP/EBP?',
+    'push ebp',
+    'mov ebp, esp',
+    'sub esp, 0x10',
+    '; ... (work)',
+    'leave',
+    'ret'
+  ],
+  // CTF_C3_LeaveRetExplain_ANS: [
+  //   '; C3 — ANSWER',
+  //   'push ebp',
+  //   'mov ebp, esp',
+  //   'sub esp, 0x10',
+  //   'leave',
+  //   'ret',
+  //   '; ANSWER: leave = mov esp, ebp; pop ebp',
+  // ],
+
+  /* --- Branching / Conditionals --- */
+  CTF_D1_JG_Jmp: [
+    '; D1 — jg path',
+    '; Init: EAX=5, EBX=7. Q: ECX?',
+    'mov eax, 5',
+    'mov ebx, 7',
+    'cmp eax, ebx',
+    'jg greater',
+    'mov ecx, 1',
+    'jmp done',
+    'greater:',
+    'mov ecx, 2',
+    'done:',
+    'nop'
+  ],
+  // CTF_D1_JG_Jmp_ANS: [
+  //   '; D1 — ANSWER',
+  //   'mov eax, 5',
+  //   'mov ebx, 7',
+  //   'cmp eax, ebx',
+  //   'jg greater',
+  //   'mov ecx, 1',
+  //   'jmp done',
+  //   'greater:',
+  //   'mov ecx, 2',
+  //   'done: nop',
+  //   '; ANSWER: ECX=1',
+  // ],
+
+  CTF_D2_JNE_Equal: [
+    '; D2 — jne not taken if equal',
+    '; Init: EAX=7, EBX=7. Q: EDX?',
+    'mov eax, 7',
+    'mov ebx, 7',
+    'cmp eax, ebx',
+    'jne noteq',
+    'mov edx, 0xAA',
+    'jmp done',
+    'noteq:',
+    'mov edx, 0xBB',
+    'done:',
+    'nop'
+  ],
+  // CTF_D2_JNE_Equal_ANS: [
+  //   '; D2 — ANSWER',
+  //   'mov eax, 7',
+  //   'mov ebx, 7',
+  //   'cmp eax, ebx',
+  //   'jne noteq',
+  //   'mov edx, 0xAA',
+  //   'jmp done',
+  //   'noteq:',
+  //   'mov edx, 0xBB',
+  //   'done: nop',
+  //   '; ANSWER: EDX=0xAA',
+  // ],
+
+  CTF_D3_TEST_JZ: [
+    '; D3 — test/jz',
+    '; Init: EAX=0. Q: EBX?',
+    'mov eax, 0',
+    'test eax, eax',
+    'jz zero',
+    'mov ebx, 1',
+    'jmp end',
+    'zero:',
+    'mov ebx, 0',
+    'end:',
+    'nop'
+  ],
+  // CTF_D3_TEST_JZ_ANS: [
+  //   '; D3 — ANSWER',
+  //   'mov eax, 0',
+  //   'test eax, eax',
+  //   'jz zero',
+  //   'mov ebx, 1',
+  //   'jmp end',
+  //   'zero:',
+  //   'mov ebx, 0',
+  //   'end: nop',
+  //   '; ANSWER: EBX=0',
+  // ],
+
+  CTF_D4_Signed_JG: [
+    '; D4 (signed) — cmp -1 vs 0, jg?',
+    '; Init: EAX=0xFFFFFFFF (-1 signed), EBX=0. Q: is jg taken?',
+    'mov eax, 0xFFFFFFFF',
+    'mov ebx, 0',
+    'cmp eax, ebx',
+    'jg signed_greater',
+    'mov esi, 0',           // not taken path
+    'jmp done',
+    'signed_greater:',
+    'mov esi, 1',           // taken path
+    'done:',
+    'nop'
+  ],
+  // CTF_D4_Signed_JG_ANS: [
+  //   '; D4 (signed) — ANSWER: jg NOT taken',
+  //   'mov eax, 0xFFFFFFFF',
+  //   'mov ebx, 0',
+  //   'cmp eax, ebx',
+  //   'jg signed_greater',
+  //   'mov esi, 0',
+  //   'jmp done',
+  //   'signed_greater:',
+  //   'mov esi, 1',
+  //   'done: nop',
+  //   '; ANSWER: ESI=0 (since -1 > 0 is false)'
+  // ],
+
+  CTF_D4_Unsigned_JA: [
+    '; D4 (unsigned) — cmp 0xFFFFFFFF vs 0, ja?',
+    '; Init: same values, unsigned compare. Q: is ja taken?',
+    'mov eax, 0xFFFFFFFF',
+    'mov ebx, 0',
+    'cmp eax, ebx',
+    'ja unsigned_above',
+    'mov edi, 0',
+    'jmp done',
+    'unsigned_above:',
+    'mov edi, 1',
+    'done:',
+    'nop'
+  ],
+  // CTF_D4_Unsigned_JA_ANS: [
+  //   '; D4 (unsigned) — ANSWER: ja taken',
+  //   'mov eax, 0xFFFFFFFF',
+  //   'mov ebx, 0',
+  //   'cmp eax, ebx',
+  //   'ja unsigned_above',
+  //   'mov edi, 0',
+  //   'jmp done',
+  //   'unsigned_above:',
+  //   'mov edi, 1',
+  //   'done: nop',
+  //   '; ANSWER: EDI=1 (0xFFFFFFFF > 0 unsigned)'
+  // ],
+
+  /* --- Addressing & LEA (kept memory-free for compatibility) --- */
+  CTF_E1_LEA_ScalePlus: [
+    '; E1 — emulate [ebp+8]=4 via immediate; focus on LEA math',
+    '; Init: a=4. Q: EAX=a (=4), EDX=(a*4+8)=?',
+    'mov eax, 4',
+    'lea edx, [eax*4 + 8]',
+    'done:',
+    'nop'
+  ],
+  // CTF_E1_LEA_ScalePlus_ANS: [
+  //   '; E1 — ANSWER',
+  //   'mov eax, 4',
+  //   'lea edx, [eax*4 + 8]',
+  //   '; ANSWER: EAX=4, EDX=24',
+  //   'done: nop'
+  // ],
+
+  CTF_E2_LEA_BaseIndexDisp: [
+    '; E2 — LEA with base+index*4+disp (no memory read)',
+    '; Init: EAX=0x1000, ECX=3. Q: EDX address?',
+    'mov eax, 0x1000',
+    'mov ecx, 3',
+    'lea edx, [eax + ecx*4 + 8]',
+    'done:',
+    'nop'
+  ],
+  // CTF_E2_LEA_BaseIndexDisp_ANS: [
+  //   '; E2 — ANSWER',
+  //   'mov eax, 0x1000',
+  //   'mov ecx, 3',
+  //   'lea edx, [eax + ecx*4 + 8]',
+  //   '; ANSWER: EDX=0x1014',
+  //   'done: nop'
+  // ],
+
+  /* --- Flags Focus --- */
+  CTF_F1_AddOverflow: [
+    '; F1 — signed overflow example',
+    '; Init: EAX=0x7FFFFFFF. Q: EAX, OF, CF, SF, ZF?',
+    'mov eax, 0x7FFFFFFF',
+    'add eax, 1',
+    'done:',
+    'nop'
+  ],
+  // CTF_F1_AddOverflow_ANS: [
+  //   '; F1 — ANSWER',
+  //   'mov eax, 0x7FFFFFFF',
+  //   'add eax, 1',
+  //   '; ANSWER: EAX=0x80000000, OF=1, CF=0, SF=1, ZF=0',
+  //   'done: nop'
+  // ],
+
+  CTF_F2_SubBorrow: [
+    '; F2 — borrow on SUB',
+    '; Init: EAX=0x00000000. Q: EAX, CF, OF, SF, ZF?',
+    'mov eax, 0x00000000',
+    'sub eax, 1',
+    'done:',
+    'nop'
+  ],
+  // CTF_F2_SubBorrow_ANS: [
+  //   '; F2 — ANSWER',
+  //   'mov eax, 0x00000000',
+  //   'sub eax, 1',
+  //   '; ANSWER: EAX=0xFFFFFFFF, CF=1, OF=0, SF=1, ZF=0',
+  //   'done: nop'
+  // ],
+
+  /* --- Mini CTF Puzzles --- */
+  CTF_G1_Sum1to3: [
+    '; G1 — sum 1..3 with a loop',
+    '; Q: final EAX?',
+    'mov eax, 0',
+    'mov ecx, 1',
+    'loop:',
+    'add eax, ecx',
+    'inc ecx',
+    'cmp ecx, 4',
+    'jl loop',
+    'done:',
+    'nop'
+  ],
+  // CTF_G1_Sum1to3_ANS: [
+  //   '; G1 — ANSWER',
+  //   'mov eax, 0',
+  //   'mov ecx, 1',
+  //   'loop:',
+  //   'add eax, ecx',
+  //   'inc ecx',
+  //   'cmp ecx, 4',
+  //   'jl loop',
+  //   '; ANSWER: EAX=6',
+  //   'done: nop'
+  // ],
+
+  CTF_G2_EqualityBranch: [
+    '; G2 — two outcomes by equality',
+    '; Init: EBX=5. Q: EDX?',
+    'mov ebx, 5',
+    'cmp ebx, 5',
+    'jne notfive',
+    'mov edx, 0xBEEF',
+    'jmp done',
+    'notfive:',
+    'mov edx, 0xFEED',
+    'done:',
+    'nop'
+  ],
+  // CTF_G2_EqualityBranch_ANS: [
+  //   '; G2 — ANSWER',
+  //   'mov ebx, 5',
+  //   'cmp ebx, 5',
+  //   'jne notfive',
+  //   'mov edx, 0xBEEF',
+  //   'jmp done',
+  //   'notfive:',
+  //   'mov edx, 0xFEED',
+  //   'done: nop',
+  //   '; ANSWER: EDX=0xBEEF'
+  // ],
+
+  CTF_G3_CallRet_Inspect: [
+    '; G3 — CALL/RET, inspect before caller cleanup',
+    '; Start ESP=0x4000. Q: after RET (before add esp,8), EAX and ESP?',
+    'mov esp, 0x4000',
+    'push 3',
+    'push 4',
+    'call add_two',
+    'jmp after_ret',       // inspect here before cleanup
+    'add esp, 8',
+    'after_ret:',
+    'nop',
+    'add_two:',
+    'push ebp',
+    'mov ebp, esp',
+    'mov eax, 4',
+    'add eax, 3',
+    'mov esp, ebp',
+    'pop ebp',
+    'ret'
+  ],
+  // CTF_G3_CallRet_Inspect_ANS: [
+  //   '; G3 — ANSWER',
+  //   'mov esp, 0x4000',
+  //   'push 3',
+  //   'push 4',
+  //   'call add_two',
+  //   'jmp after_ret',
+  //   'add esp, 8',
+  //   'after_ret: nop',
+  //   'add_two:',
+  //   'push ebp',
+  //   'mov ebp, esp',
+  //   'mov eax, 4',
+  //   'add eax, 3',
+  //   'mov esp, ebp',
+  //   'pop ebp',
+  //   'ret',
+  //   '; ANSWER: EAX=7, ESP=0x3FF8 after RET (caller later does add esp,8)',
+  // ]
+
 
 };
 
 // --- Utilities & rendering ---
 function toHex(v, pad=8) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(pad,'0'); }
+
+// --- Flag helpers with real carry/borrow semantics ---
+function setFlagsAdd32(a, b, res) {
+  a >>>= 0; b >>>= 0; res >>>= 0;
+  state.flags.ZF = (res === 0) ? 1 : 0;
+  state.flags.SF = (res >>> 31) & 1;
+  state.flags.CF = (res < a) ? 1 : 0;                 // unsigned carry out
+  const sa = (a >>> 31) & 1, sb = (b >>> 31) & 1, sr = (res >>> 31) & 1;
+  state.flags.OF = ((~(sa ^ sb) & (sa ^ sr)) & 1);    // signed overflow
+  state.flags.PF = 0; state.flags.AF = 0;
+}
+
+function setFlagsSub32(a, b, res) {
+  a >>>= 0; b >>>= 0; res >>>= 0;
+  state.flags.ZF = (res === 0) ? 1 : 0;
+  state.flags.SF = (res >>> 31) & 1;
+  state.flags.CF = (a < b) ? 1 : 0;                   // unsigned borrow
+  const sa = (a >>> 31) & 1, sb = (b >>> 31) & 1, sr = (res >>> 31) & 1;
+  state.flags.OF = (((sa ^ sb) & (sa ^ sr)) & 1);     // signed overflow
+  state.flags.PF = 0; state.flags.AF = 0;
+}
+
+// 8-bit variant for byte memory ops, if you want CF correct there too
+function setFlagsAdd8(a, b, res) {
+  a &= 0xFF; b &= 0xFF; res &= 0xFF;
+  state.flags.ZF = (res === 0) ? 1 : 0;
+  state.flags.SF = (res >>> 7) & 1;
+  state.flags.CF = (a + b > 0xFF) ? 1 : 0;
+  const sa = (a >>> 7) & 1, sb = (b >>> 7) & 1, sr = (res >>> 7) & 1;
+  state.flags.OF = ((~(sa ^ sb) & (sa ^ sr)) & 1);
+  state.flags.PF = 0; state.flags.AF = 0;
+}
 
 function renderAll() {
   console.log("renderAll()");
@@ -541,60 +1141,124 @@ function step() {
       
       state.eip++; break;
     }
+    // case 'add': {
+    //   const [dst, src] = args;
+    //   const memAddr = parseMemAddr(dst);
+
+    //   if (memAddr !== null) {
+    //     const cur = readByte(memAddr);
+    //     const next = (cur + (getVal(src) & 0xFF)) & 0xFF;
+
+    //     console.log("ADD BYTE [", dst, "] =", toHex(next, 2), "(from", toHex(cur,2), "+", toHex(getVal(src)&0xFF,2),")");
+    //     writeByte(memAddr, next);
+
+    //     // flags from byte result (teaching simplification)
+
+    //     state.flags.ZF = next === 0 ? 1 : 0;
+    //     state.flags.SF = (next & 0x80) ? 1:0;
+    //     state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+    //   } else {
+    //     const val = (getVal(dst) + getVal(src)) >>> 0;
+    //     console.log("Add", dst, "=", toHex(val));
+    //     setReg(dst, val);
+
+    //     // If adding to ESP, also pop N/4 items from the stack UI
+    //     const dstUpper = (dst || '').trim().toUpperCase();
+    //     if (dstUpper === 'ESP') {
+    //       const inc = getVal(src) >>> 0;
+    //       const drop = Math.floor(inc / 4);
+    //       for (let i = 0; i < drop; i++) state.stack.pop();
+    //     }
+    //     state.flags.ZF = (val>>>0) === 0 ? 1:0;
+    //     state.flags.SF = (val & 0x80000000) ? 1:0;
+    //     state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+    //   }
+    //   state.eip++; break;
+    // }
     case 'add': {
       const [dst, src] = args;
       const memAddr = parseMemAddr(dst);
 
       if (memAddr !== null) {
-        const cur = readByte(memAddr);
-        const next = (cur + (getVal(src) & 0xFF)) & 0xFF;
-
-        console.log("ADD BYTE [", dst, "] =", toHex(next, 2), "(from", toHex(cur,2), "+", toHex(getVal(src)&0xFF,2),")");
+        const cur = readByte(memAddr) & 0xFF;
+        const inc = getVal(src) & 0xFF;
+        const next = (cur + inc) & 0xFF;
+        console.log("ADD BYTE [", dst, "] =", toHex(next, 2), "(from", toHex(cur,2), "+", toHex(inc,2),")");
         writeByte(memAddr, next);
-
-        // flags from byte result (teaching simplification)
-
-        state.flags.ZF = next === 0 ? 1 : 0;
-        state.flags.SF = (next & 0x80) ? 1:0;
-        state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+        setFlagsAdd8(cur, inc, next);   // <-- real 8-bit CF/OF/ZF/SF
       } else {
-        const val = (getVal(dst) + getVal(src)) >>> 0;
-        console.log("Add", dst, "=", toHex(val));
+        const a = getVal(dst) >>> 0;
+        const b = getVal(src) >>> 0;
+        const val = (a + b) >>> 0;
+        console.log("ADD", dst, "=", toHex(val));
         setReg(dst, val);
 
-        // If adding to ESP, also pop N/4 items from the stack UI
+        // Visual stack tidy for "add esp, N"
         const dstUpper = (dst || '').trim().toUpperCase();
         if (dstUpper === 'ESP') {
-          const inc = getVal(src) >>> 0;
+          const inc = b >>> 0;
           const drop = Math.floor(inc / 4);
           for (let i = 0; i < drop; i++) state.stack.pop();
         }
-        state.flags.ZF = (val>>>0) === 0 ? 1:0;
-        state.flags.SF = (val & 0x80000000) ? 1:0;
-        state.flags.OF = 0; state.flags.CF = 0; state.flags.PF = 0; state.flags.AF = 0;
+
+        setFlagsAdd32(a, b, val);       // <-- real 32-bit CF/OF/ZF/SF
       }
       state.eip++; break;
     }
+    // case 'sub': {
+    //   const [dst, src] = args;
+    //   const val = (getVal(dst) - getVal(src)) >>> 0; // 32-bit unsigned result
+    //   console.log("SUB", dst, "=", toHex(val));
+    //   setReg(dst, val);
+    //   aluFlags(val);
+    //   state.eip++; break;
+    // }
     case 'sub': {
       const [dst, src] = args;
-      const val = (getVal(dst) - getVal(src)) >>> 0; // 32-bit unsigned result
+      const a = getVal(dst) >>> 0;
+      const b = getVal(src) >>> 0;
+      const val = (a - b) >>> 0;
       console.log("SUB", dst, "=", toHex(val));
       setReg(dst, val);
-      aluFlags(val);
+      setFlagsSub32(a, b, val);     // <-- sets CF for borrow when a<b
       state.eip++; break;
     }
+    // case 'inc': {
+    //   const [dst] = args;
+    //   const val = (getVal(dst) + 1) >>> 0;
+    //   console.log("INC", dst)
+    //   setReg(dst, val); aluFlags(val); state.eip++; break;
+    // }
+    // case 'dec': {
+    //   const [dst] = args;
+    //   const val = (getVal(dst) - 1) >>> 0;
+    //   console.log("DEC", dst)
+    //   setReg(dst, val); aluFlags(val); state.eip++; break;
+
+    // }
     case 'inc': {
       const [dst] = args;
-      const val = (getVal(dst) + 1) >>> 0;
-      console.log("INC", dst)
-      setReg(dst, val); aluFlags(val); state.eip++; break;
+      const a = getVal(dst) >>> 0;
+      const val = (a + 1) >>> 0;
+      setReg(dst, val);
+      state.flags.ZF = (val === 0) ? 1 : 0;
+      state.flags.SF = (val >>> 31) & 1;
+      state.flags.OF = (a === 0x7FFFFFFF) ? 1 : 0; // only case where signed +1 overflows
+      // CF unchanged
+      state.flags.PF = 0; state.flags.AF = 0;
+      state.eip++; break;
     }
     case 'dec': {
       const [dst] = args;
-      const val = (getVal(dst) - 1) >>> 0;
-      console.log("DEC", dst)
-      setReg(dst, val); aluFlags(val); state.eip++; break;
-
+      const a = getVal(dst) >>> 0;
+      const val = (a - 1) >>> 0;
+      setReg(dst, val);
+      state.flags.ZF = (val === 0) ? 1 : 0;
+      state.flags.SF = (val >>> 31) & 1;
+      state.flags.OF = (a === 0x80000000) ? 1 : 0; // only case where signed -1 overflows
+      // CF unchanged
+      state.flags.PF = 0; state.flags.AF = 0;
+      state.eip++; break;
     }
     case 'mul': {
       // x86 semantics (32-bit): EDX:EAX = EAX * src (unsigned)
@@ -651,11 +1315,20 @@ function step() {
       state.regs.ESP = (state.regs.ESP + 4) >>> 0;
       state.eip++; break;
     }
+    // case 'cmp': {
+    //   const [a,b] = args;
+    //   const res = (getVal(a) - getVal(b)) >>> 0;
+    //   console.log("CMP", a, "vs", b, "res", toHex(res));
+    //   aluFlags(res);
+    //   state.eip++; break;
+    // }
     case 'cmp': {
-      const [a,b] = args;
-      const res = (getVal(a) - getVal(b)) >>> 0;
-      console.log("CMP", a, "vs", b, "res", toHex(res));
-      aluFlags(res);
+      const [aOp, bOp] = args;
+      const a = getVal(aOp) >>> 0;
+      const b = getVal(bOp) >>> 0;
+      const res = (a - b) >>> 0;
+      console.log("CMP", aOp, "vs", bOp, "res", toHex(res));
+      setFlagsSub32(a, b, res);     // <-- identical flags to SUB (no write-back)
       state.eip++; break;
     }
     case 'call': {
