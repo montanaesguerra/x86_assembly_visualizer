@@ -160,6 +160,24 @@ const demos = {
     'xor ebx, 0x0F0F0F0F',  // expect EBX=0xFFFFFFFF
     'nop'
   ],
+    LEA_Demo: [
+    '; LEA = Load Effective Address (no memory read)',
+    '; Example 1: base + displacement',
+    'mov eax, 0x2000',
+    'lea edi, [eax + 0x20]',          // EDI = 0x2020
+
+    '; Example 2: base + index*scale + disp',
+    'mov ebx, 3',
+    'lea esi, [eax + ebx*4 + 8]',     // ESI = 0x2000 + 12 + 8 = 0x2014
+
+    '; Example 3: index*scale only + disp',
+    'lea ecx, [ebx*8 + 0x10]',        // ECX = 3*8 + 0x10 = 0x28
+
+    '; Example 4: base only (pointer copy)',
+    'lea edx, [esi]',                 // EDX = ESI
+
+    'nop'
+  ],
 
 };
 
@@ -284,6 +302,62 @@ function parseMemAddr(t) {
 
   return state.regs[r] >>> 0;
 }
+
+// Compute effective address from a memory expression like [eax + ebx*4 + 8]
+// Supports: base reg, optional index*scale (scale in {1,2,4,8}), optional +/- displacement (hex or dec).
+function computeEA(expr) {
+  if (!expr) return 0 >>> 0;
+  const m = expr.trim().match(/^\[\s*([^\]]+)\s*\]$/);
+  if (!m) {
+    console.warn("LEA computeEA: not a [ ... ] expr:", expr);
+    return 0 >>> 0;
+  }
+  // tokenization: split by '+' and normalize minus signs into +(-X)
+  const inside = m[1]
+    .replace(/-/g, '+-')      // turn "a - b" into "a +-b"
+    .replace(/\s+/g, '');     // remove spaces
+
+  let sum = 0 >>> 0;
+  const tokens = inside.split('+').filter(Boolean);
+
+  for (const t of tokens) {
+    // hex or decimal immediate (possibly signed)
+    if (/^[+-]?0x[0-9a-fA-F]+$/.test(t)) {
+      const v = parseInt(t, 16) >>> 0;
+      sum = (sum + v) >>> 0;
+      continue;
+    }
+    if (/^[+-]?\d+$/.test(t)) {
+      const v = (parseInt(t, 10) >>> 0);
+      sum = (sum + v) >>> 0;
+      continue;
+    }
+
+    // index*scale (e.g., EAX*4), case-insensitive
+    const ms = t.match(/^([A-Za-z]{2,3})\*(1|2|4|8)$/);
+    if (ms) {
+      const reg = ms[1].toUpperCase();
+      const scale = parseInt(ms[2], 10);
+      if (REG_NAMES.has(reg)) {
+        const part = (state.regs[reg] * scale) >>> 0;
+        sum = (sum + part) >>> 0;
+        continue;
+      }
+    }
+
+    // base register only
+    const r = t.toUpperCase();
+    if (REG_NAMES.has(r)) {
+      sum = (sum + (state.regs[r] >>> 0)) >>> 0;
+      continue;
+    }
+
+    console.warn("LEA computeEA: unrecognized token:", t);
+  }
+
+  return sum >>> 0;
+}
+
 
 
 // Column 4: stack
@@ -497,6 +571,15 @@ function step() {
       console.log("XOR", dst, ",", src, "=", toHex(val));
       setReg(dst, val);
       aluFlags(val); // update ZF/SF, clear OF/CF/PF/AF for teaching
+      state.eip++;
+      break;
+    }
+    case 'lea': {
+      const [dst, src] = args;
+      // LEA does NOT touch flags in our teaching model
+      const addr = computeEA(src);
+      console.log("LEA", dst, ",", src, "->", toHex(addr));
+      setReg(dst, addr);
       state.eip++;
       break;
     }
