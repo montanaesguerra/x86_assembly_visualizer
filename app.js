@@ -610,6 +610,16 @@ function step() {
       if (state.flags.ZF===1) { jumpTo(label); } else { state.eip++; }
       break;
     }
+    case 'jnz': {
+      const [label] = args;
+      console.log("JNZ (ZF=", state.flags.ZF, ") to", label);
+      if (state.flags.ZF === 0) {
+        jumpTo(label);
+      } else {
+        state.eip++;
+      }
+      break;
+    }
     case 'nop': { console.log("NOP"); state.eip++; break; }
     default: { console.warn("Unknown mn:", mn); state.eip++; }
   }
