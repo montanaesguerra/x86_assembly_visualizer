@@ -73,7 +73,7 @@ const demos = {
   ],
   Print: [
     //Print String Instructions
-    '; Write "Release the white paper\\n\\0" to memory starting at 0x2000',
+    //'; Write "Release the white paper\\n\\0" to memory starting at 0x2000',
     'mov edi, 0x2000', //destination cursor
 
     //"Release"
