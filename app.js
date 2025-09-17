@@ -78,7 +78,7 @@ const demos = {
 
     //"Release"
     'mov [edi], 0x52', 'inc edi', // R
-    'mov [edi], 0x 65', 'inc edi', //e
+    'mov [edi], 0x65', 'inc edi', //e
     'mov [edi], 0x6C', 'inc edi', // l
     'mov [edi], 0x65', 'inc edi', // e
     'mov [edi], 0x61', 'inc edi', // a
@@ -164,8 +164,8 @@ const demos = {
     '; LEA = Load Effective Address (no memory read)',
     '; Example 1: base + displacement',
     'mov eax, 0x2000',
-    'lea edi, [eax + 0x20]',          // EDI = 0x2020
 
+    'lea edi, [eax + 0x20]',          // EDI = 0x2020
     '; Example 2: base + index*scale + disp',
     'mov ebx, 3',
     'lea esi, [eax + ebx*4 + 8]',     // ESI = 0x2000 + 12 + 8 = 0x2014
@@ -237,8 +237,6 @@ function renderRegs() {
   regsBody.appendChild(preservedFlagsEl);
   _prevRegsSnapshot = { ...values };
 }
-
-
 
 // function renderRegs() {
 //   const keys = ['EAX','EBX','ECX','EDX','ESI','EDI','EBP','ESP','EIP'];
@@ -357,8 +355,6 @@ function computeEA(expr) {
 
   return sum >>> 0;
 }
-
-
 
 // Column 4: stack
 // Update to include memory address column TODO
