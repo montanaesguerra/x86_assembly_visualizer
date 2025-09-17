@@ -142,6 +142,24 @@ const demos = {
     'equal: mov ecx, 2',
     'done: nop'
   ],
+  Loop: [
+    '; Sum ECX..1 into EAX using a simple loop',
+    'mov ecx, 5',           // 5,4,3,2,1
+    'xor eax, eax',         // sum = 0
+    'loop_start:',
+    'add eax, ecx',         // add current ECX
+    'dec ecx',              // ECX-- sets ZF when ECX==0
+    'jnz loop_start',       // loop until ECX==0
+    'nop'                   // EAX should be 15
+  ],
+    XOR_Basics: [
+    '; XOR basics',
+    'mov eax, 0x12345678',
+    'xor eax, eax',    // should zero EAX, ZF=1
+    'mov ebx, 0xF0F0F0F0',
+    'xor ebx, 0x0F0F0F0F',  // expect EBX=0xFFFFFFFF
+    'nop'
+  ],
 
 };
 
@@ -470,6 +488,15 @@ function step() {
       state.flags.OF = wide ? 1: 0;
       state.flags.ZF = 0; state.flags.SF = 0; state.flags.PF = 0; state.flags.AF = 0;
 
+      state.eip++;
+      break;
+    }
+    case 'xor': {
+      const [dst, src] = args;
+      const val = (getVal(dst) ^ getVal(src)) >>> 0; // 32-bit result
+      console.log("XOR", dst, ",", src, "=", toHex(val));
+      setReg(dst, val);
+      aluFlags(val); // update ZF/SF, clear OF/CF/PF/AF for teaching
       state.eip++;
       break;
     }
