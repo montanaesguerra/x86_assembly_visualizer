@@ -59,8 +59,8 @@ const demos = {
   ],
   stack: [
     //Stack instructions
-    'push ebp',
-    'mov ebp, esp',
+    'push ebp ; Saves the callers base pointer',
+    'mov ebp, esp ; Set the new base pointer to the current stack pointer',
     'mov eax, 0x10',
     'mov ebx, 0x15',
     'mov ecx, 0x20',
@@ -72,7 +72,10 @@ const demos = {
     'pop eax',
     'pop ebx',
     'pop ecx',
-    'pop edx'
+    'pop edx',
+    'mov esp, ebp ; Restore RSP to the value it had before local variables were allocated',
+    'pop ebp ; Restore the callers EBP',
+    'ret ; Return to the calling function'
   ],
   Print: [
     //Print String Instructions
@@ -135,8 +138,10 @@ const demos = {
     'je equal',             // equal -> jump
     'mov ecx, 1',           // (skipped)
     'jmp done',
-    'equal: mov ecx, 2',
-    'done: nop'
+    'equal:',
+    'mov ecx, 2',
+    'done:',
+    'nop'
   ],
   Loop: [
     '; Sum ECX..1 into EAX using a simple loop',
@@ -172,6 +177,34 @@ const demos = {
     '; Example 4: base only (pointer copy)',
     'lea edx, [esi]',                 // EDX = ESI
 
+    'nop'
+  ],
+  Calling_Functions_DEMO: [
+    '; Caller sets a=4, b=7; This function adds a + b + 1. We expect EAX=12 on return',
+    'main:',
+    'mov ecx, 4               ; a ',
+    'mov edx, 7               ; b ',
+    'push 7                   ; push b',
+    'push 4                   ; push a',
+    'call sum_plus_one',
+    'add  esp, 8              ; cdecl: caller cleans args',
+    '; EAX should be 12 here',
+    'jmp  done',
+
+    'sum_plus_one:',
+    'push ebp                 ; prologue',
+    'mov  ebp, esp',
+    'push ebx                 ; use the stack to save callee-saved EBX',
+    'mov  ebx, ecx            ; ebx = a',
+    'add  ebx, edx            ; ebx = a + b',
+    'mov  eax, ebx            ; eax = a + b',
+    'add  eax, 1              ; eax = a + b + 1',
+    'pop  ebx                 ; restore callee-saved',
+    'mov  esp, ebp            ; epilogue',
+    'pop  ebp',
+    'ret',
+
+    'done:',
     'nop'
   ],
   CALL_RET_Basics: [
