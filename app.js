@@ -952,7 +952,7 @@ window.ARH = (function(){
   }
 
   function collide(){
-    // Use your existing layout panels as targets
+
     const targets = Array.from(document.querySelectorAll('#col-asm, #col-regs, #col-mem, #col-stack, header, main *'))
       .filter(el=>{
         if (!el.getBoundingClientRect) return false;
@@ -982,7 +982,7 @@ window.ARH = (function(){
   function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // ship (triangle glyph like your ▶)
+    // ship
     ctx.save();
     ctx.translate(ship.x, ship.y);
     ctx.rotate(ship.ang);
@@ -1033,7 +1033,7 @@ function setFlagsSub32(a, b, res) {
   state.flags.PF = 0; state.flags.AF = 0;
 }
 
-// 8-bit variant for byte memory ops, if you want CF correct there too
+// 8-bit variant for byte memory ops
 function setFlagsAdd8(a, b, res) {
   a &= 0xFF; b &= 0xFF; res &= 0xFF;
   state.flags.ZF = (res === 0) ? 1 : 0;
@@ -1162,7 +1162,6 @@ function parseMemAddr(t) {
 }
 
 // Compute effective address from a memory expression like [eax + ebx*4 + 8]
-// Supports: base reg, optional index*scale (scale in {1,2,4,8}), optional +/- displacement (hex or dec).
 function computeEA(expr) {
   if (!expr) return 0 >>> 0;
   const m = expr.trim().match(/^\[\s*([^\]]+)\s*\]$/);
@@ -1250,13 +1249,6 @@ function renderStack() {
     <div class="stack-col-h"></div>
     `;
   stackEl.appendChild(header);
-
-  // state.stack.forEach((val) => {
-  //   const d = document.createElement('div');
-  //   d.className = 'stack-item';
-  //   d.innerHTML = `<div>${toHex(val)}</div>`;
-  //   stackEl.appendChild(d);
-  // });
 }
 
 // ========= Case-insensitive operand handling =========
@@ -1504,7 +1496,7 @@ function step() {
     }
     case 'lea': {
       const [dst, src] = args;
-      // LEA does NOT touch flags in our teaching model
+      // LEA does not touch flags - yet
       const addr = computeEA(src);
       console.log("LEA", dst, ",", src, "->", toHex(addr));
       setReg(dst, addr);
@@ -1632,18 +1624,18 @@ function loadDemo() {
   const select = document.getElementById('demoSelect');
   const choice = (select && select.value) ? select.value : 'arithmetic';
 
-  // ADD: game mode toggle
+
   if (choice === 'Argh') {
     if (!window.ARH || !ARH.enabled) ARH.init();
-    // pause/clear any program state while the game runs
+
     Object.assign(state, {
       eip: 0,
       program: []
     });
     renderAll();
-    return; // <-- skip normal demo load
+    return;
   } else {
-    // If we were in game mode and user picked a normal demo, turn it off
+
     if (window.ARH && ARH.enabled) ARH.disable();
   }
 
