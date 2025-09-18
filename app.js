@@ -835,6 +835,183 @@ const demos = {
 // --- Utilities & rendering ---
 function toHex(v, pad=8) { return '0x' + (v >>> 0).toString(16).toUpperCase().padStart(pad,'0'); }
 
+// --- ARGH: Spaceship mini-game overlay (W/A/D + Space = bullets '1'/'0') ---
+window.ARH = (function(){
+  let enabled = false, canvas, ctx, rafId;
+  let ship, bullets = [], keys = new Set();
+  let lastTime = 0;
+  const BULLET_SPEED = 450;   // px/s
+  const SHIP_THRUST  = 220;   // px/s^2
+  const SHIP_TURN    = 3.2;   // rad/s
+  const DRAG         = 0.995; // velocity damping per frame
+  let bitToggle = 0;
+
+  function init() {
+    if (enabled) return;
+    enabled = true;
+
+    canvas = document.createElement('canvas');
+    canvas.id = 'argh-canvas';
+    Object.assign(canvas.style, {
+      position:'fixed', left:'0', top:'0', width:'100%', height:'100%',
+      zIndex:'9999', pointerEvents:'none'
+    });
+    document.body.appendChild(canvas);
+    ctx = canvas.getContext('2d');
+    onResize();
+    window.addEventListener('resize', onResize);
+
+    ship = {
+      x: window.innerWidth * 0.5,
+      y: window.innerHeight * 0.6,
+      vx: 0, vy: 0,
+      ang: -Math.PI/2
+    };
+    bullets.length = 0;
+    keys.clear();
+    document.addEventListener('keydown', onDown, {passive:false});
+    document.addEventListener('keyup', onUp);
+
+    lastTime = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function disable() {
+    if (!enabled) return;
+    enabled = false;
+    cancelAnimationFrame(rafId);
+    document.removeEventListener('keydown', onDown);
+    document.removeEventListener('keyup', onUp);
+    window.removeEventListener('resize', onResize);
+    if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    // un-scatter any elements we moved
+    document.querySelectorAll('.argh-hit').forEach(el => {
+      el.classList.remove('argh-hit');
+      el.style.transform = '';
+      el.style.transition = '';
+    });
+  }
+
+  function onResize(){
+    if (!canvas) return;
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  function onDown(e){
+    if (!enabled) return;
+    if (['KeyW','KeyA','KeyD','Space'].includes(e.code)) {
+      e.preventDefault(); // stop scroll/space interactions
+      keys.add(e.code);
+      if (e.code === 'Space') shoot();
+    }
+  }
+  function onUp(e){ keys.delete(e.code); }
+
+  function shoot(){
+    const s = Math.sin(ship.ang), c = Math.cos(ship.ang);
+    bullets.push({
+      x: ship.x + c*16, y: ship.y + s*16,
+      vx: c*BULLET_SPEED, vy: s*BULLET_SPEED,
+      born: performance.now(),
+      txt: (bitToggle ^= 1) ? '1' : '0'
+    });
+  }
+
+  function loop(t){
+    const dt = Math.min(0.033, (t - lastTime)/1000);
+    lastTime = t;
+    update(dt, t);
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function update(dt, t){
+    // rotate + thrust
+    if (keys.has('KeyA')) ship.ang -= SHIP_TURN*dt;
+    if (keys.has('KeyD')) ship.ang += SHIP_TURN*dt;
+    if (keys.has('KeyW')) {
+      ship.vx += Math.cos(ship.ang)*SHIP_THRUST*dt;
+      ship.vy += Math.sin(ship.ang)*SHIP_THRUST*dt;
+    }
+    // integrate + wrap
+    ship.x = (ship.x + ship.vx*dt + canvas.width)  % canvas.width;
+    ship.y = (ship.y + ship.vy*dt + canvas.height) % canvas.height;
+    ship.vx *= DRAG; ship.vy *= DRAG;
+
+    // bullets
+    bullets = bullets.filter(b => (t - b.born) < 2000);
+    for (const b of bullets) {
+      b.x += b.vx*dt;
+      b.y += b.vy*dt;
+      b.x = (b.x + canvas.width)  % canvas.width;
+      b.y = (b.y + canvas.height) % canvas.height;
+    }
+
+    collide();
+  }
+
+  function collide(){
+    // Use your existing layout panels as targets
+    const targets = Array.from(document.querySelectorAll('#col-asm, #col-regs, #col-mem, #col-stack, header, main *'))
+      .filter(el=>{
+        if (!el.getBoundingClientRect) return false;
+        if (!el.offsetWidth || !el.offsetHeight) return false;
+        const tag = el.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE') return false;
+        return el.id !== 'argh-canvas';
+      });
+
+    for (const b of bullets) {
+      for (const el of targets) {
+        const r = el.getBoundingClientRect();
+        if (b.x >= r.left && b.x <= r.right && b.y >= r.top && b.y <= r.bottom) {
+          if (!el.classList.contains('argh-hit')) {
+            el.classList.add('argh-hit');
+            el.style.transition = 'transform 600ms cubic-bezier(.2,.8,.2,1)';
+            const dx  = (Math.random()*2-1)*120;
+            const dy  = (Math.random()*2-1)*120;
+            const rot = (Math.random()*2-1)*25;
+            el.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+          }
+        }
+      }
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // ship (triangle glyph like your ▶)
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.rotate(ship.ang);
+    ctx.beginPath();
+    ctx.moveTo(18, 0);
+    ctx.lineTo(-12, -10);
+    ctx.lineTo(-12, 10);
+    ctx.closePath();
+    ctx.strokeStyle = '#00ffd0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    if (keys.has('KeyW')) {
+      ctx.beginPath();
+      ctx.moveTo(-12, -6); ctx.lineTo(-20, 0); ctx.lineTo(-12, 6);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // bullets as '1'/'0'
+    ctx.font = '16px monospace';
+    ctx.fillStyle = '#00ffd0';
+    for (const b of bullets) ctx.fillText(b.txt, b.x, b.y);
+  }
+
+  return { get enabled(){ return enabled; }, init, disable };
+})();
+
+
+
 // --- Flag helpers with real carry/borrow semantics ---
 function setFlagsAdd32(a, b, res) {
   a >>>= 0; b >>>= 0; res >>>= 0;
@@ -1434,9 +1611,42 @@ function jumpTo(label) {
 }
 
 // --- Demo loader wired to dropdown ---
+// function loadDemo() {
+//   const select = document.getElementById('demoSelect');
+//   const choice = (select && select.value) ? select.value : 'arithmetic';
+//   if (!demos[choice]) { alert('That demo is not available yet.'); return; }
+
+//   Object.assign(state, {
+//     eip: 0,
+//     regs: { EAX:0, EBX:0, ECX:0, EDX:0, ESI:0, EDI:0, EBP:0x1000, ESP:0x1000 },
+//     flags: { CF:0, ZF:0, SF:0, OF:0, PF:0, AF:0 },
+//     mem: new Map(),
+//     stack: [],
+//     program: demos[choice].slice()
+//   });
+
+//   console.log("Loaded demo:", choice, state.program);
+//   renderAll();
+// }
 function loadDemo() {
   const select = document.getElementById('demoSelect');
   const choice = (select && select.value) ? select.value : 'arithmetic';
+
+  // ADD: game mode toggle
+  if (choice === 'Argh') {
+    if (!window.ARH || !ARH.enabled) ARH.init();
+    // pause/clear any program state while the game runs
+    Object.assign(state, {
+      eip: 0,
+      program: []
+    });
+    renderAll();
+    return; // <-- skip normal demo load
+  } else {
+    // If we were in game mode and user picked a normal demo, turn it off
+    if (window.ARH && ARH.enabled) ARH.disable();
+  }
+
   if (!demos[choice]) { alert('That demo is not available yet.'); return; }
 
   Object.assign(state, {
@@ -1452,13 +1662,23 @@ function loadDemo() {
   renderAll();
 }
 
+
+// function reset() {
+//   console.log("Reset");
+//   state.eip = 0;
+//   state.stack = [];
+//   state.regs.ESP = 0x1000;
+//   renderAll();
+// }
 function reset() {
+  if (window.ARH && ARH.enabled) { ARH.disable(); }
   console.log("Reset");
   state.eip = 0;
   state.stack = [];
   state.regs.ESP = 0x1000;
   renderAll();
 }
+
 
 // --- Wire controls (ensure these exist before calling renderAll) ---
 const stepBtn = document.getElementById('stepBtn');
