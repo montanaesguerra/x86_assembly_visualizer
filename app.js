@@ -884,7 +884,7 @@ window.ARH = (function(){
     document.removeEventListener('keyup', onUp);
     window.removeEventListener('resize', onResize);
     if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
-    // un-scatter any elements we moved
+
     document.querySelectorAll('.argh-hit').forEach(el => {
       el.classList.remove('argh-hit');
       el.style.transform = '';
